@@ -1,68 +1,35 @@
-// Caches so we never fetch the same URL twice in one visit
-const showsCache = {};
-const episodesCache = {};
-
+//You can edit ALL of the code here
 function setup() {
   const rootElem = document.getElementById("root");
   const countDisplay = document.getElementById("episode-count");
 
-  rootElem.textContent = "Loading shows...";
-  countDisplay.textContent = "";
+  // Show a loading message while we wait for the API
+  rootElem.textContent = "Loading episodes...";
+  countDisplay.textContent = "Loading episodes...";
 
-  fetchShows()
-    .then((shows) => {
-      // initial view: shows listing
-      makePageForShows(shows);
-      setupShowSearch(shows);
-      populateShowSelector(shows);
-      toggleToShowsView();
-    })
-    .catch((error) => {
-      console.error(error);
-      rootElem.textContent =
-        "Sorry, something went wrong while loading shows. Please try again later.";
-      countDisplay.textContent = "Failed to load shows.";
-    });
-}
-
-// ---------- FETCH HELPERS ----------
-
-function fetchShows() {
-  if (showsCache.allShows) {
-    return Promise.resolve(showsCache.allShows);
-  }
-
-  return fetch("https://api.tvmaze.com/shows")
+  fetch("https://api.tvmaze.com/shows/82/episodes")
     .then((response) => {
       if (!response.ok) {
         throw new Error("Network response was not ok when loading shows");
       }
       return response.json();
     })
-    .then((shows) => {
-      shows.sort((a, b) =>
-        a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-      );
-      showsCache.allShows = shows;
-      return shows;
-    });
-}
+    .then((allEpisodes) => {
+      // Clear loading message
+      rootElem.innerHTML = "";
 
-function fetchEpisodes(showId) {
-  if (episodesCache[showId]) {
-    return Promise.resolve(episodesCache[showId]);
-  }
+      // Use the fetched data just like before
+      makePageForEpisodes(allEpisodes);
+      setupSearch(allEpisodes);
+      setupSelector(allEpisodes);
 
-  return fetch(`https://api.tvmaze.com/shows/${showId}/episodes`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok when loading episodes");
-      }
-      return response.json();
+      countDisplay.textContent = `Showing ${allEpisodes.length} episode(s)`;
     })
-    .then((episodes) => {
-      episodesCache[showId] = episodes;
-      return episodes;
+    .catch((error) => {
+      console.error(error);
+      rootElem.textContent =
+        "Sorry, something went wrong while loading episodes. Please try again later.";
+      countDisplay.textContent = "Failed to load episodes.";
     });
 }
 
@@ -74,49 +41,6 @@ function formatEpisodeCode(season, episode) {
   return `S${s}E${e}`;
 }
 
-// shows listing (front page)
-function makePageForShows(shows) {
-  const rootElem = document.getElementById("root");
-  rootElem.innerHTML = "";
-
-  const grid = document.createElement("div");
-  grid.className = "show-grid";
-
-  shows.forEach((show) => {
-    const card = document.createElement("article");
-    card.className = "show-card";
-
-    card.innerHTML = `
-      <img src="${show.image?.medium ?? ""}" alt="${show.name}" />
-      <div class="show-info">
-        <h2>${show.name}</h2>
-        <p><strong>Genres:</strong> ${show.genres.join(", ")}</p>
-        <p><strong>Status:</strong> ${show.status}</p>
-        <p><strong>Rating:</strong> ${show.rating?.average ?? "N/A"}</p>
-        <p><strong>Runtime:</strong> ${show.runtime ?? "N/A"} min</p>
-        <div class="show-summary">${show.summary ?? ""}</div>
-      </div>
-    `;
-
-    card.addEventListener("click", () => {
-      // also sync the show selector
-      const showSelector = document.getElementById("show-selector");
-      showSelector.value = show.id;
-      loadEpisodesForShow(show.id);
-    });
-
-    grid.appendChild(card);
-  });
-
-  const attribution = document.createElement("footer");
-  attribution.innerHTML = `Data originally from <a href="https://www.tvmaze.com/" target="_blank">TVMaze.com</a>`;
-  attribution.className = "attribution";
-
-  rootElem.appendChild(grid);
-  rootElem.appendChild(attribution);
-}
-
-// episodes listing
 function makePageForEpisodes(episodeList) {
   const rootElem = document.getElementById("root");
   rootElem.innerHTML = "";
@@ -175,7 +99,6 @@ function setupSearch(allEpisodes) {
 
 function setupEpisodeSelector(allEpisodes) {
   const selector = document.getElementById("episode-selector");
-  selector.innerHTML = "";
 
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
