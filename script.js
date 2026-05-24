@@ -11,6 +11,7 @@ function setup() {
 
   fetchShows()
     .then((shows) => {
+      // initial view: shows listing
       makePageForShows(shows);
       setupShowSearch(shows);
       populateShowSelector(shows);
@@ -130,6 +131,7 @@ function makePageForShows(shows) {
     `;
 
     card.addEventListener("click", () => {
+      // also sync the show selector
       const showSelector = document.getElementById("show-selector");
       showSelector.value = show.id;
       loadEpisodesForShow(show.id);
@@ -162,9 +164,7 @@ function makePageForEpisodes(episodeList) {
     const code = formatEpisodeCode(episode.season, episode.number);
 
     card.innerHTML = `
-      <img src="${
-        episode.image?.medium ?? "https://placehold.co/210x295?text=No+Image"
-      }" alt="${episode.name}" />
+      <img src="${episode.image?.medium ?? ""}" alt="${episode.name}" />
       <div class="episode-info">
         <h2>${episode.name}</h2>
         <p class="episode-code">${code}</p>
@@ -205,6 +205,7 @@ function setupShowSearch(allShows) {
   };
 
   backBtn.onclick = () => {
+    // back to shows listing
     makePageForShows(allShows);
     toggleToShowsView();
   };
