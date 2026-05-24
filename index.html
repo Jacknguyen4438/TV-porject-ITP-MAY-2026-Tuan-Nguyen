@@ -10,7 +10,11 @@
 
   <body>
     <header>
-      <select id="show-selector"></select>
+      <!-- Show search + back button (for shows view) -->
+      <input type="text" id="show-search" placeholder="Search shows..." />
+      <button id="back-to-shows" style="display: none">Back to shows</button>
+
+      <!-- Episode search + controls (for episodes view) -->
       <input type="text" id="search" placeholder="Search episodes..." />
       <span id="episode-count"></span>
       <select id="show-selector"></select>
