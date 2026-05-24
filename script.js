@@ -11,7 +11,6 @@ function setup() {
 
   fetchShows()
     .then((shows) => {
-      // initial view: shows listing
       makePageForShows(shows);
       setupShowSearch(shows);
       populateShowSelector(shows);
@@ -66,6 +65,38 @@ function fetchEpisodes(showId) {
     });
 }
 
+// ---------- VIEW TOGGLING ----------
+
+function toggleToShowsView() {
+  const showSearch = document.getElementById("show-search");
+  const backBtn = document.getElementById("back-to-shows");
+  const episodeSearch = document.getElementById("search");
+  const showSelector = document.getElementById("show-selector");
+  const episodeSelector = document.getElementById("episode-selector");
+  const countDisplay = document.getElementById("episode-count");
+
+  showSearch.style.display = "";
+  backBtn.style.display = "none";
+  episodeSearch.style.display = "none";
+  showSelector.style.display = "none";
+  episodeSelector.style.display = "none";
+  countDisplay.textContent = "";
+}
+
+function toggleToEpisodesView() {
+  const showSearch = document.getElementById("show-search");
+  const backBtn = document.getElementById("back-to-shows");
+  const episodeSearch = document.getElementById("search");
+  const showSelector = document.getElementById("show-selector");
+  const episodeSelector = document.getElementById("episode-selector");
+
+  showSearch.style.display = "none";
+  backBtn.style.display = "";
+  episodeSearch.style.display = "";
+  showSelector.style.display = "";
+  episodeSelector.style.display = "";
+}
+
 // ---------- UI HELPERS ----------
 
 function formatEpisodeCode(season, episode) {
@@ -99,7 +130,6 @@ function makePageForShows(shows) {
     `;
 
     card.addEventListener("click", () => {
-      // also sync the show selector
       const showSelector = document.getElementById("show-selector");
       showSelector.value = show.id;
       loadEpisodesForShow(show.id);
@@ -132,7 +162,9 @@ function makePageForEpisodes(episodeList) {
     const code = formatEpisodeCode(episode.season, episode.number);
 
     card.innerHTML = `
-      <img src="${episode.image?.medium ?? "https://placehold.co/210x295?text=No+Image"}" alt="${episode.name}" />
+      <img src="${
+        episode.image?.medium ?? "https://placehold.co/210x295?text=No+Image"
+      }" alt="${episode.name}" />
       <div class="episode-info">
         <h2>${episode.name}</h2>
         <p class="episode-code">${code}</p>
@@ -153,11 +185,35 @@ function makePageForEpisodes(episodeList) {
 
 // ---------- SEARCH & SELECTORS ----------
 
+function setupShowSearch(allShows) {
+  const searchInput = document.getElementById("show-search");
+  const backBtn = document.getElementById("back-to-shows");
+
+  searchInput.value = "";
+
+  searchInput.oninput = () => {
+    const term = searchInput.value.toLowerCase();
+    const filtered = allShows.filter((show) => {
+      const name = show.name.toLowerCase();
+      const genres = show.genres.join(" ").toLowerCase();
+      const summary = (show.summary ?? "").toLowerCase();
+      return (
+        name.includes(term) || genres.includes(term) || summary.includes(term)
+      );
+    });
+    makePageForShows(filtered);
+  };
+
+  backBtn.onclick = () => {
+    makePageForShows(allShows);
+    toggleToShowsView();
+  };
+}
+
 function setupSearch(allEpisodes) {
   const searchInput = document.getElementById("search");
   const countDisplay = document.getElementById("episode-count");
 
-  // Reset search box when switching shows
   searchInput.value = "";
   countDisplay.textContent = `Showing ${allEpisodes.length} episode(s)`;
 
@@ -166,7 +222,7 @@ function setupSearch(allEpisodes) {
     const filtered = allEpisodes.filter(
       (ep) =>
         ep.name.toLowerCase().includes(term) ||
-        (ep.summary ?? "").toLowerCase().includes(term),
+        (ep.summary ?? "").toLowerCase().includes(term)
     );
     makePageForEpisodes(filtered);
     countDisplay.textContent = `Showing ${filtered.length} of ${allEpisodes.length} episode(s)`;
@@ -193,7 +249,6 @@ function setupEpisodeSelector(allEpisodes) {
   selector.onchange = () => {
     const selectedId = selector.value;
     if (!selectedId) {
-      // Show all episodes again
       makePageForEpisodes(allEpisodes);
       return;
     }
@@ -240,6 +295,7 @@ function loadEpisodesForShow(showId) {
       setupSearch(episodes);
       setupEpisodeSelector(episodes);
       countDisplay.textContent = `Showing ${episodes.length} episode(s)`;
+      toggleToEpisodesView();
     })
     .catch((error) => {
       console.error(error);
@@ -250,68 +306,3 @@ function loadEpisodesForShow(showId) {
 }
 
 window.onload = setup;
-
-/**
- * LEVEL 400 NEW FUNCTION
- * Populates the show selector dropdown with all available shows.
- * When the user picks a show, loads that show's episodes.
- *
- * @param {Array} shows - List of show objects from TVMaze.
- * @return {void}
- */
-function setupShowSelector(shows) {
-  const selector = document.getElementById("show-selector");
-  selector.innerHTML = "";
-
-  for (const show of shows) {
-    const option = document.createElement("option");
-    option.value = show.id;
-    option.textContent = show.name;
-    selector.appendChild(option);
-  }
-
-  selector.addEventListener("change", () => {
-    loadEpisodesForShow(selector.value);
-  });
-}
-
-/**
- * LEVEL 400 NEW FUNCTION
- * Fetches and displays episodes for a chosen show.
- * Uses an in-memory cache so we never fetch the same show twice.
- *
- * @param {number|string} showId - The TVMaze show ID.
- * @return {void}
- */
-function loadEpisodesForShow(showId) {
-  const rootElem = document.getElementById("root");
-
-  if (episodesCache[showId]) {
-    makePageForEpisodes(episodesCache[showId]);
-    setupSearch(episodesCache[showId]);
-    setupSelector(episodesCache[showId]);
-    return;
-  }
-
-  rootElem.textContent = "Loading episodes...";
-
-  fetch(`https://api.tvmaze.com/shows/${showId}/episodes`)
-    .then((response) => {
-      if (response.status === 404) return [];
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      return response.json();
-    })
-    .then((episodes) => {
-      episodesCache[showId] = episodes;
-      if (episodes.length === 0) {
-        rootElem.textContent = "No episodes available for this show.";
-        return;
-      }
-      makePageForEpisodes(episodes);
-      setupSearch(episodes);
-      setupSelector(episodes);
-    })
-    .catch((error) => {
-      rootElem.textContent = `Error loading episodes: ${error.message}`;
-    });
-}

@@ -10,12 +10,17 @@
 
   <body>
     <header>
-      <select id="show-selector"></select>
-      <input type="text" id="search" placeholder="Search episodes..." />
-      <span id="episode-count"></span>
-      <select id="show-selector"></select>
-      <select id="episode-selector"></select>
-    </header>
+  <!-- Show search + back button (for shows view) -->
+  <input type="text" id="show-search" placeholder="Search shows..." />
+  <button id="back-to-shows" style="display: none">Back to shows</button>
+
+  <!-- Episode search + controls (for episodes view) -->
+  <input type="text" id="search" placeholder="Search episodes..." />
+  <span id="episode-count"></span>
+  <select id="show-selector"></select>
+  <select id="episode-selector"></select>
+</header>
+
 
     <div id="root"></div>
 
